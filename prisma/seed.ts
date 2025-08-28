@@ -89,9 +89,9 @@ async function main() {
       },
       {
         employeeId: "HCWH",
-        firstName: "Jumia",
+        firstName: "Jumla",
         lastName: "",
-        email: "jumia@company.com",
+        email: "jumla@company.com",
         password: await bcrypt.hash("adminWH", 12),
         role: Role.SUPERVISOR,
         jobTitle: "Supervisor",
