@@ -9,8 +9,14 @@ export const authConfig = {
     signIn: "/sign-in",
   },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET,   // 🔥 Fix MissingSecret
+  secret: process.env.NEXTAUTH_SECRET,   // 🔥 REQUIRED in production
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Always redirect to dashboard after login
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (new URL(url).origin === baseUrl) return url
+      return `${baseUrl}/dashboard`
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role
@@ -61,20 +67,4 @@ export const authConfig = {
           return null
         }
 
-        console.log("User authenticated successfully:", user.employeeId)
-
-        return {
-          id: user.id,
-          name: `${(user as any).firstName ?? ""} ${(user as any).lastName ?? ""}`.trim(),
-          email: user.email,
-          role: user.role,
-          employeeId: user.employeeId,
-          supervisorId: user.supervisorId ?? undefined,
-        }
-      },
-    }),
-  ],
-} satisfies NextAuthConfig
-
-// 🔥 Glue code: this gives you handlers & auth()
-export const { handlers, auth } = NextAuth(authConfig)
+        co
