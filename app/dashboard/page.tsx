@@ -315,8 +315,8 @@ export default async function DashboardPage() {
           </div>
           <div className="space-y-3">
             <button className="w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors">
-              <div className="font-medium text-green-800">Import User Data</div>
-              <div className="text-sm text-green-600">Only .csv/.xlsx</div>
+              <div className="font-medium text-green-800">Approve All Pending</div>
+              <div className="text-sm text-green-600">Bulk approve selected requests</div>
             </button>
             <ExportReports userRole={user.role} />
             {user.role === 'ADMIN' && (
@@ -334,3 +334,7 @@ export default async function DashboardPage() {
     </div>
   )
 }
+
+       
+     
+   
