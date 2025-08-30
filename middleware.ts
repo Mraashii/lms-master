@@ -29,7 +29,6 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp)).*)",
-  ],
+  matcher: ["/dashboard/:path*", "/"], // only protect /dashboard/* and check /
 }
+
