@@ -7,9 +7,10 @@ if (!process.env.NEXTAUTH_SECRET) {
 } else {
   console.log("✅ NEXTAUTH_SECRET loaded")
 }
+})
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,   // 🔑 required for JWT validation
+ secret: process.env.NEXTAUTH_SECRET || "fallback-secret",  // make it explicit
   ...authConfig,
 })
