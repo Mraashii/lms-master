@@ -1,4 +1,12 @@
-export const dynamic = "force-dynamic"; 
-import { handlers } from "@/auth"
+import NextAuth from "next-auth"
+import { authConfig } from "@/auth.config"
 
-export const { GET, POST } = handlers
+// Force Node.js runtime so env vars (like NEXTAUTH_SECRET) are always available
+export const runtime = "nodejs"
+
+const handler = NextAuth({
+  secret: process.env.NEXTAUTH_SECRET,
+  ...authConfig,
+})
+
+export { handler as GET, handler as POST }
