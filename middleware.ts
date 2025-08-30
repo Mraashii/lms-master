@@ -3,12 +3,18 @@ import { auth } from "@/auth"
 export default auth((req) => {
   const { auth: session } = req
   const isLoggedIn = !!session?.user
-  const isOnPublicPage = req.nextUrl.pathname === "/"
-  const isOnSignIn = req.nextUrl.pathname === "/sign-in"
-  const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard")
+  const { pathname } = req.nextUrl
+
+  const isOnPublicPage = pathname === "/"
+  const isOnSignIn = pathname === "/sign-in"
+  const isOnDashboard = pathname.startsWith("/dashboard")
 
   // Allow access to public pages and sign-in page
   if (isOnPublicPage || isOnSignIn) {
+    if (isLoggedIn && isOnPublicPage) {
+      // redirect logged-in users from "/" → "/dashboard"
+      return Response.redirect(new URL("/dashboard", req.nextUrl))
+    }
     return
   }
 
@@ -17,18 +23,11 @@ export default auth((req) => {
     return Response.redirect(new URL("/sign-in", req.nextUrl))
   }
 
-  // Allow authenticated users to access dashboard
-  if (isLoggedIn && isOnDashboard) {
-    return
-  }
-
-  // Redirect authenticated users from root to dashboard
-  if (isLoggedIn && isOnPublicPage) {
-    return Response.redirect(new URL("/dashboard", req.nextUrl))
-  }
+  return
 })
 
+// Force middleware to run in Node.js runtime so NEXTAUTH_SECRET is visible
 export const config = {
-  matcher: ["/dashboard/:path*", "/"], // only protect /dashboard/* and check /
+  matcher: ["/dashboard/:path*", "/"],
+  runtime: "nodejs",
 }
-
