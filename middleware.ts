@@ -1,35 +1,37 @@
+Midd
+
 import { auth } from "@/auth"
-import { NextResponse } from "next/server"
 
 export default auth((req) => {
   const { auth: session } = req
   const isLoggedIn = !!session?.user
-  const { pathname } = req.nextUrl
+  const isOnPublicPage = req.nextUrl.pathname === "/"
+  const isOnSignIn = req.nextUrl.pathname === "/sign-in"
+  const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard")
 
-  const isAuthRoute = pathname.startsWith("/api/auth")  // ✅ Let NextAuth handle its own routes
-  const isPublicPage = pathname === "/" || pathname === "/sign-in"
-
-  // Always allow NextAuth API
-  if (isAuthRoute) return
-
-  // Allow public pages
-  if (isPublicPage) return
-
-  // Protect /dashboard and other private routes
-  if (!isLoggedIn && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/sign-in", req.url))
+  // Allow access to public pages and sign-in page
+  if (isOnPublicPage || isOnSignIn) {
+    return
   }
 
-  // Redirect authenticated users from "/" to "/dashboard"
-  if (isLoggedIn && pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+  // Redirect unauthenticated users trying to access protected pages
+  if (!isLoggedIn && isOnDashboard) {
+    return Response.redirect(new URL("/sign-in", req.nextUrl))
   }
 
-  return NextResponse.next()
+  // Allow authenticated users to access dashboard
+  if (isLoggedIn && isOnDashboard) {
+    return
+  }
+
+  // Redirect authenticated users from root to dashboard
+  if (isLoggedIn && isOnPublicPage) {
+    return Response.redirect(new URL("/dashboard", req.nextUrl))
+  }
 })
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp)).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp)).*)",
   ],
 }
