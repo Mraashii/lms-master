@@ -1,6 +1,5 @@
-import NextAuth from "next-auth"
 import type { NextAuthConfig } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
+import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
@@ -9,62 +8,79 @@ export const authConfig = {
     signIn: "/sign-in",
   },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET,   // 🔥 REQUIRED in production
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Always redirect to dashboard after login
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      if (new URL(url).origin === baseUrl) return url
-      return `${baseUrl}/dashboard`
-    },
-    async jwt({ token, user }) {
+    jwt({ token, user }: any) {
       if (user) {
-        token.role = (user as any).role
-        token.employeeId = (user as any).employeeId
-        token.supervisorId = (user as any).supervisorId || null
+        token.role = user.role
+        token.employeeId = user.employeeId
+        token.supervisorId = user.supervisorId || null
       }
       return token
     },
-    async session({ session, token }) {
+    session({ session, token }: any) {
       if (token) {
         session.user.id = token.sub!
-        session.user.role = token.role as string
-        session.user.employeeId = token.employeeId as string
-        session.user.supervisorId = token.supervisorId as string | null
+        session.user.role = token.role
+        session.user.employeeId = token.employeeId
+        session.user.supervisorId = token.supervisorId
       }
       return session
     },
   },
   providers: [
-    CredentialsProvider({
-      name: "Credentials",
+    Credentials({
+      name: "credentials",
       credentials: {
         employeeId: { label: "Employee ID", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.employeeId || !credentials?.password) {
-          console.log("Missing credentials")
+        try {
+          if (!credentials?.employeeId || !credentials?.password) {
+            console.log("Missing credentials")
+            return null
+          }
+
+          const user = await prisma.user.findUnique({
+            where: {
+              employeeId: credentials.employeeId as string,
+            },
+          })
+
+          if (!user) {
+            console.log("User not found")
+            return null
+          }
+
+          // Type assertion for password field
+          const userWithPassword = user as any
+
+          const passwordsMatch = await bcrypt.compare(
+            credentials.password as string,
+            userWithPassword.password
+          )
+
+          if (!passwordsMatch) {
+            console.log("Password mismatch")
+            return null
+          }
+
+          console.log("User authenticated successfully:", user.employeeId)
+
+          // Return user object that matches NextAuth User type
+          return {
+            id: user.id,
+            name: `${(user as any).firstName} ${(user as any).lastName}`,
+            email: user.email,
+            role: user.role,
+            employeeId: user.employeeId,
+            supervisorId: user.supervisorId ?? undefined,
+          } as any
+        } catch (error) {
+          console.error("Auth error:", error)
           return null
         }
-
-        const user = await prisma.user.findUnique({
-          where: { employeeId: credentials.employeeId },
-        })
-
-        if (!user) {
-          console.log("User not found")
-          return null
-        }
-
-        const passwordsMatch = await bcrypt.compare(
-          credentials.password,
-          (user as any).password
-        )
-
-        if (!passwordsMatch) {
-          console.log("Password mismatch")
-          return null
-        }
-
-        co
+      },
+    }),
+  ],
+} satisfies NextAuthConfig
